@@ -1,0 +1,13 @@
+1.build project:
+    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release / colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
+
+2.config system env
+    source ./install/setup.bash
+
+3.ros2 run percipio_cam3 percipio_publisher
+
+4.run rviz2
+  a.Add visualization rviz_default_plugins/Image(By display type)
+  b.Select Image toptic(/percipio_depth or /percipio_rgb)
+
+  
