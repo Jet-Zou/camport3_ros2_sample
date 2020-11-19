@@ -10,7 +10,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 
-#include "sensor_msgs/fill_image.hpp"
+//#include "sensor_msgs/fill_image.hpp"
+#include "sensor_msgs/image_encodings.hpp"
 #include "sensor_msgs/msg/camera_info.h"
 #include "builtin_interfaces/msg/time.hpp"
 
@@ -76,6 +77,36 @@ std::string mat_type2encoding(int mat_type)
   }
 }
 
+static inline bool fillImage(
+  sensor_msgs::msg::Image & image,
+  const std::string & encoding_arg,
+  uint32_t rows_arg,
+  uint32_t cols_arg,
+  uint32_t step_arg,
+  const void * data_arg)
+{
+  image.encoding = encoding_arg;
+  image.height = rows_arg;
+  image.width = cols_arg;
+  image.step = step_arg;
+  size_t st0 = (step_arg * rows_arg);
+  image.data.resize(st0);
+  std::memcpy(&image.data[0], data_arg, st0);
+
+  image.is_bigendian = 0;
+  return true;
+}
+
+/// Clear the data of an image message.
+/**
+ * \details All fields but `data` are kept the same.
+ * \param[out]image Image to be cleared.
+ */
+static inline void clearImage(sensor_msgs::msg::Image & image)
+{
+  image.data.resize(0);
+}
+
 class MinimalDepthSubscriber : public rclcpp::Node {
   public:
     MinimalDepthSubscriber()
@@ -91,10 +122,10 @@ class MinimalDepthSubscriber : public rclcpp::Node {
 
         // https://github.com/ros2/ros2/wiki/About-Quality-of-Service-Settings
 
-        rclcpp::QoS depth_qos(10);
-        depth_qos.keep_last(10);
-        depth_qos.best_effort();
-        depth_qos.durability_volatile();
+        //rclcpp::QoS depth_qos(10);
+        //depth_qos.keep_last(10);
+        //depth_qos.best_effort();
+        //depth_qos.durability_volatile();
 
         mDepthSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_depth", 1);//, rclcpp::SensorDataQoS());
         mColorSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_rgb", 1);//, rclcpp::SensorDataQoS());
@@ -121,12 +152,14 @@ class MinimalDepthSubscriber : public rclcpp::Node {
     	    cv::Mat depth, irl, irr, color;
             parseFrame(frame, &depth, &irl, &irr, &color, hColorIspHandle);
             if(!depth.empty()){
-                sensor_msgs::fillImage(__ros2_depth_image, sensor_msgs::image_encodings::MONO16, depth.rows, depth.cols, 2*depth.cols, depth.data);
+                //sensor_msgs::
+                fillImage(__ros2_depth_image, sensor_msgs::image_encodings::MONO16, depth.rows, depth.cols, 2*depth.cols, depth.data);
                 __ros2_depth_image.header.frame_id = "map";
                 mDepthSub->publish(__ros2_depth_image);
             }
             if(!color.empty()){
-                sensor_msgs::fillImage(__ros2_rgb_image, sensor_msgs::image_encodings::TYPE_8UC3, color.rows, color.cols, 3*color.cols, color.data);
+                //sensor_msgs::
+                fillImage(__ros2_rgb_image, sensor_msgs::image_encodings::TYPE_8UC3, color.rows, color.cols, 3*color.cols, color.data);
                 __ros2_rgb_image.header.frame_id = "map";
                 mColorSub->publish(__ros2_rgb_image);
             }

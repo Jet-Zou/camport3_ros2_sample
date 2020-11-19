@@ -6,8 +6,10 @@
 #include <fstream>
 #include <iterator>
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgcodecs/legacy/constants_c.h>
 #include "TyIsp.h"
+#if(CV_VERSION_MAJOR >= 4)
+#include <opencv2/imgcodecs/legacy/constants_c.h>
+#endif
 
 
 static inline int parseFrame(const TY_FRAME_DATA& frame, cv::Mat* pDepth
