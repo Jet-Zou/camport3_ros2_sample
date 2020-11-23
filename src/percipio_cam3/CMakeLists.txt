@@ -18,7 +18,17 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs  REQUIRED)
+find_package(tf2_eigen REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -34,21 +44,38 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-find_package(OpenCV REQUIRED)
-if (NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV library not found")
+find_package(PCL REQUIRED)
+if(NOT PCL_FOUND)
+    message(FATAL_ERROR "PCL library not found")
 else()
-    message(STATUS "OpenCV version: ${OpenCV_VERSION}")
-    include_directories(${OpenCV_INCLUDE_DIRS})
+    message(STATUS "################################################################")
+    find_package(OpenCV REQUIRED)
+    if (NOT OpenCV_FOUND)
+        message(FATAL_ERROR "OpenCV library not found")
+    else()
+        message(STATUS "OpenCV version: ${OpenCV_VERSION}")
+        message(STATUS "PLC version: ${PLC_VERSION}")
+        include_directories(${PCL_INCLUDE_DIRS})
+        include_directories(${OpenCV_INCLUDE_DIRS})
 
-    add_executable(percipio_publisher src/percipio_publisher.cpp)
-    target_link_libraries(percipio_publisher   ${catkin_LIBRARIES})
-    target_link_libraries(percipio_publisher -ltycam ${OpenCV_LIBS})
-    ament_target_dependencies(percipio_publisher rclcpp sensor_msgs)
+        add_executable(percipio_publisher src/percipio_publisher.cpp)
+        target_link_libraries(percipio_publisher   ${catkin_LIBRARIES})
+        target_link_libraries(percipio_publisher -ltycam -lboost_system ${OpenCV_LIBS} ${PCL_LIBS})
+        ament_target_dependencies(percipio_publisher 
+            rclcpp
+            tf2_ros
+            tf2_geometry_msgs
+            tf2_eigen 
+            geometry_msgs
+            nav_msgs
+            sensor_msgs 
+            pcl_conversions
+        )
 
-    install(TARGETS
-        percipio_publisher
-        DESTINATION lib/${PROJECT_NAME}
-    )
+        install(TARGETS
+            percipio_publisher
+            DESTINATION lib/${PROJECT_NAME}
+        )
+    endif()
 endif()
 ament_package()

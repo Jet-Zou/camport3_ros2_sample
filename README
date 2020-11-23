@@ -1,13 +1,22 @@
-1.build project:
+1.install PCL 
+    git clone https://github.com/PointCloudLibrary/pcl.git 
+    cd pcl
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo make install
+
+2.build project:
     colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release / colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
 
-2.config system env
+3.config system env
     source ./install/setup.bash
 
-3.ros2 run percipio_cam3 percipio_publisher
+4.ros2 run percipio_cam3 percipio_publisher
 
-4.run rviz2
+5.run rviz2
   a.Add visualization rviz_default_plugins/Image(By display type)
   b.Select Image toptic(/percipio_depth or /percipio_rgb)
-
-  
+  c.Add visualization rviz_default_plugins/PointCloud2(By display type) 
+  d.Select PointCloud2 toptic(/percipio_pcl)

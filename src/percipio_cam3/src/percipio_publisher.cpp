@@ -6,15 +6,19 @@
 #include <thread>
 #include <utility>
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+//#include <pcl/ros/conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+
 #include "opencv2/highgui/highgui.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 
-//#include "sensor_msgs/fill_image.hpp"
 #include "sensor_msgs/image_encodings.hpp"
 #include "sensor_msgs/msg/camera_info.h"
 #include "builtin_interfaces/msg/time.hpp"
-
 
 #include "../include/common.hpp"
 #include "../include/TYImageProc.h"
@@ -36,6 +40,9 @@ static int32_t m_color_height;
 
 static sensor_msgs::msg::Image __ros2_depth_image;
 static sensor_msgs::msg::Image __ros2_rgb_image;
+static sensor_msgs::msg::PointCloud2 __ros2_pcl2_output;
+
+static pcl::PointCloud<pcl::PointXYZ> cloud;
 
 static std::string device_sn = "";
 static bool b_rgb_enable = true;
@@ -129,6 +136,7 @@ class MinimalDepthSubscriber : public rclcpp::Node {
 
         mDepthSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_depth", 1);//, rclcpp::SensorDataQoS());
         mColorSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_rgb", 1);//, rclcpp::SensorDataQoS());
+        pcl_pub   = rclcpp::Node::create_publisher<sensor_msgs::msg::PointCloud2> ("percipio_pcl", 1);
         timer_ = this->create_wall_timer(1ms, std::bind(&MinimalDepthSubscriber::timer_callback, this));
     }
 
@@ -156,6 +164,24 @@ class MinimalDepthSubscriber : public rclcpp::Node {
                 fillImage(__ros2_depth_image, sensor_msgs::image_encodings::MONO16, depth.rows, depth.cols, 2*depth.cols, depth.data);
                 __ros2_depth_image.header.frame_id = "map";
                 mDepthSub->publish(__ros2_depth_image);
+
+                std::vector<TY_VECT_3F> p3d;
+                p3d.resize(depth.size().area());
+                ASSERT_OK(TYMapDepthImageToPoint3d(&depth_calib, depth.cols, depth.rows, (uint16_t*)depth.data, &p3d[0]));
+
+                cloud.width  = depth.size().area();
+                cloud.height = 1;
+                cloud.points.resize(depth.size().area());
+                for (size_t i = 0; i < cloud.points.size (); ++i)
+                {
+                    cloud.points[i].x = p3d[i].x / 1000;
+                    cloud.points[i].y = p3d[i].y / 1000;
+                    cloud.points[i].z = p3d[i].z / 1000;
+                }
+
+                pcl::toROSMsg(cloud, __ros2_pcl2_output);
+                __ros2_pcl2_output.header.frame_id = "map";
+                pcl_pub->publish(__ros2_pcl2_output);
             }
             if(!color.empty()){
                 //sensor_msgs::
@@ -173,6 +199,7 @@ class MinimalDepthSubscriber : public rclcpp::Node {
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDepthSub;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mColorSub;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_pub;
 };
 
 int main(int argc, char * argv[])
