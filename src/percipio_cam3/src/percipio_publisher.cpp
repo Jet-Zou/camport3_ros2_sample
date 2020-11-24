@@ -104,36 +104,10 @@ static inline bool fillImage(
   return true;
 }
 
-/// Clear the data of an image message.
-/**
- * \details All fields but `data` are kept the same.
- * \param[out]image Image to be cleared.
- */
-static inline void clearImage(sensor_msgs::msg::Image & image)
-{
-  image.data.resize(0);
-}
-
 class MinimalDepthSubscriber : public rclcpp::Node {
   public:
     MinimalDepthSubscriber()
         : Node("percipio_depth_cam") {
-
-        /* Note: it is very important to use a QOS profile for the subscriber that is compatible
-         * with the QOS profile of the publisher.
-         * The ZED component node uses a default QoS profile with reliability set as "RELIABLE"
-         * and durability set as "VOLATILE".
-         * To be able to receive the subscribed topic the subscriber must use compatible
-         * parameters.
-         */
-
-        // https://github.com/ros2/ros2/wiki/About-Quality-of-Service-Settings
-
-        //rclcpp::QoS depth_qos(10);
-        //depth_qos.keep_last(10);
-        //depth_qos.best_effort();
-        //depth_qos.durability_volatile();
-
         mDepthSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_depth", 1);//, rclcpp::SensorDataQoS());
         mColorSub = rclcpp::Node::create_publisher<sensor_msgs::msg::Image>("percipio_rgb", 1);//, rclcpp::SensorDataQoS());
         pcl_pub   = rclcpp::Node::create_publisher<sensor_msgs::msg::PointCloud2> ("percipio_pcl", 1);
@@ -143,16 +117,6 @@ class MinimalDepthSubscriber : public rclcpp::Node {
   protected:
     void timer_callback()
     {
-        //auto message = std_msgs::msg::String();
-        //message.data = "Hello, world! " + std::to_string(count_++);
-        //RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-        
-        /*
-        auto message = tutorial_interfaces::msg::Num();                               // CHANGE
-        message.num = this->count_++;                                        // CHANGE
-        RCLCPP_INFO(this->get_logger(), "Publishing: '%d'", message.num);    // CHANGE
-        publisher_->publish(message);
-        */
         static int m_frame_idx = 0;
     	TY_FRAME_DATA frame;
     	int err = TYFetchFrame(hDevice, &frame, 2000);
